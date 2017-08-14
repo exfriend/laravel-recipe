@@ -1,0 +1,19 @@
+{
+    "name": "exfriend/laravel-recipe",
+    "description": "Generator framework for Laravel.",
+    "type": "library",
+    "license": "MIT",
+    "version":"0.1.0",
+    "authors": [
+        {
+            "name": "exfriend",
+            "email": "i@zlad.tk"
+        }
+    ],
+    "autoload": {
+      "psr-4":{
+        "Exfriend\\Recipe\\":"src/"
+      }
+    },
+    "require": {}
+}
