@@ -21,6 +21,12 @@ class RecipeServiceProvider extends ServiceProvider
                 Install::class,
             ] );
         }
+
+        \Blade::directive( 'dd', function ( $var ) {
+            return '<?php dd(' . $var . '); ?>';
+        } );
+
+
     }
 
     /**

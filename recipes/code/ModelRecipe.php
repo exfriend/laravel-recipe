@@ -12,6 +12,7 @@ class ModelRecipe extends Recipe
             'default' => '\\App\\Models',
             'rules' => 'required',
             'example' => '\\App\\Models',
+            'question' => 'Namespace?',
         ],
         'class' => [
             'default' => '',
@@ -103,11 +104,6 @@ class ModelRecipe extends Recipe
     public function getDefaultFilePath()
     {
         return 'app' . DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR . $this->data->get( 'class' ) . '.php';
-    }
-
-    public function interactAboutNamespace( MakeRecipe $command, $prop )
-    {
-        $this->data->put( 'namespace', $command->askWithCompletion( 'Namespace?', [ $prop[ 'default' ] ], $prop[ 'default' ] ) );
     }
 
     public function interactAboutTable( MakeRecipe $command, $prop )

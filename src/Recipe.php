@@ -15,11 +15,11 @@ abstract class Recipe
 
     public $description = '';
 
-    public $saveTo = [ 'stdout', 'file' ];
+    public $saveTo = [ 'stdout', 'file', 'data' ];
 
     protected $template;
     protected $interactMap = [
-        'prop_name' => 'interacrAboutPropName',
+        //        'prop_name' => 'interacrAboutPropName',
     ];
 
     public function getDefaultFilePath()
@@ -65,9 +65,12 @@ abstract class Recipe
         }
 
         view()->addNamespace( 'recipes', base_path( 'recipes' ) );
-        $compiled = (string)view( 'recipes::' . $this->template, $this->data );
+        return $this->compile();
+    }
 
-        return $compiled;
+    public function compile()
+    {
+        return (string)view( 'recipes::' . $this->template, $this->data );
     }
 
     protected function validateParams()
@@ -76,7 +79,7 @@ abstract class Recipe
 
         foreach ( $this->props as $name => $parameter )
         {
-            if ( is_array( $parameter ) && isset( $parameter[ 'rules' ] ) )
+            if ( isset( $parameter[ 'rules' ] ) )
             {
                 $rules[ $name ] = $parameter[ 'rules' ];
                 if ( !is_null( $parameter[ 'default' ] ) && empty( $this->data[ $name ] ) )
@@ -85,8 +88,8 @@ abstract class Recipe
                 }
             }
         }
-        $v = \Validator::make( $this->data->toArray(), $rules );
 
+        $v = \Validator::make( $this->data->toArray(), $rules );
 
         if ( $v->fails() )
         {
@@ -123,9 +126,9 @@ abstract class Recipe
 
     private function defaultInteraction( MakeRecipe $command, $prop, $name )
     {
-        if ( !isset( $prop[ 'type' ] ) || $prop[ 'type' ] == 'string' )
+        if ( $prop->isScalar() )
         {
-            $question = 'Set ' . $name;
+            $question = $prop[ 'question' ] ?? 'Set ' . $name;
             if ( isset( $prop[ 'example' ] ) )
             {
                 $question .= ' (e.g. ' . $prop[ 'example' ] . ')';
@@ -145,11 +148,11 @@ abstract class Recipe
         {
             if ( !is_array( $v ) )
             {
-                $this->props[ $v ] = [ 'default' => '' ];
+                $this->props[ $v ] = new Prop( [ 'default' => '' ] );
             }
             else
             {
-                $this->props[ $k ] = $v;
+                $this->props[ $k ] = new Prop( $v );
             }
 
         }
