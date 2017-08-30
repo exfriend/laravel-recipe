@@ -15,12 +15,14 @@ abstract class Recipe
 
     public $description = '';
 
+    protected $command;
+
     public $saveTo = [ 'stdout', 'file', 'data' ];
 
     protected $template;
-    protected $interactMap = [
-        //        'prop_name' => 'interacrAboutPropName',
-    ];
+    //    protected $interactMap = [
+    //        'prop_name' => 'interacrAboutPropName',
+    //    ];
 
     public function getDefaultFilePath()
     {
@@ -32,6 +34,11 @@ abstract class Recipe
         $this->loadProps();
         $this->data = new DataCollection();
         $this->config = new ConfigCollection();
+    }
+
+    public function interactWithCommand( $command )
+    {
+        $this->command = $command;
     }
 
     public function withConfig( array $config )
@@ -98,8 +105,10 @@ abstract class Recipe
 
     }
 
-    public function interact( MakeRecipe $command )
+    public function interact( $command = null )
     {
+        $command = $command ?? $this->command;
+
         foreach ( $this->props as $name => $prop )
         {
             // Search interactMap. If mapping exists, call it.

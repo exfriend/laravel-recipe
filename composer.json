@@ -1,18 +1,37 @@
 {
-    "name": "exfriend/laravel-recipe",
-    "description": "Generator framework for Laravel.",
-    "type": "library",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "exfriend",
-            "email": "i@zlad.tk"
-        }
-    ],
-    "autoload": {
-      "psr-4":{
-        "Exfriend\\Recipe\\":"src/"
-      }
+  "name": "exfriend/laravel-recipe",
+  "description": "Generator framework for Laravel.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "exfriend",
+      "email": "i@zlad.tk"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Exfriend\\Recipe\\": "src/"
     },
-    "require": {}
+    "files": [
+      "src/helpers.php"
+    ]
+  },
+  "require": {
+    "php": ">=7.0.0",
+    "laravel/framework": "5.5.*"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Exfriend\\Recipe\\RecipeServiceProvider"
+      ],
+      "aliases": {
+        "Recipe": "Exfriend\\Recipe\\Facade"
+      }
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^6.3"
+  }
 }

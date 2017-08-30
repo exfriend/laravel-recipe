@@ -28,8 +28,8 @@ class MakeRecipe extends LaravelCommand
 
         if ( !$recipe = $this->argument( 'recipe' ) )
         {
-            $availableRecipes = collect( require( base_path( 'recipes/config.php' ) ) )->keys()->toArray();
-            $recipe = $this->choice( 'You did not provide a recipe. Please choose one', $availableRecipes );
+//            $availableRecipes = collect( require( base_path( 'recipes/config.php' ) ) )->keys()->toArray();
+//            $recipe = $this->choice( 'You did not provide a recipe. Please choose one', $availableRecipes );
         }
         $recipe = recipe( $recipe );
 

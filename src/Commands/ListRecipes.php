@@ -14,11 +14,11 @@ class ListRecipes extends LaravelCommand
 
     public function handle()
     {
-        $kitchen = collect( require( base_path( 'recipes/config.php' ) ) )->map( function ( $v, $k ) {
-            return [ $k, app( $v )->description ];
-        } );
-
-        $this->table( [ 'Recipe', 'Description' ], $kitchen );
+//        $kitchen = collect( require( base_path( 'recipes/config.php' ) ) )->map( function ( $v, $k ) {
+//            return [ $k, app( $v )->description ];
+//        } );
+//
+//        $this->table( [ 'Recipe', 'Description' ], $kitchen );
     }
 
 }
