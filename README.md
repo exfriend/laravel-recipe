@@ -3,95 +3,155 @@ Generator framework for Laravel built on Laravel.
 
 ## Installation
 
+On Laravel 5.5:
+
 ```bash
     composer require exfriend/laravel-recipe
 ```
 
-config/app.php
-```php
-    ...
-    
-    Exfriend\Recipe\RecipeServiceProvider::class,
-    
-    ...
-```
-then call:
-```bash
-    php artisan recipe:install
-```
+## Basic Usage
 
-## Usage
-Well, Recipe comes with a couple of built-in recipes available in your `recipes` folder.
+In order to generate any entity you basically need two things: a template and the actual data.
 
-Let's generate a new model using the existing `model` recipe:
+Recipe uses Laravel's Blade as a template engine for stubs, so
+the basic usage is very similar to how you return views from controllers.
 
-```bash
-    php artisan recipe:make model
-```
-
-![Usage example](http://i.imgur.com/N3qYyf3.jpg)
-
-### Using Recipe API inside Laravel
-If your application generates some stuff, you can leverage Recipe as a generator core.
-```php
+Let's write our first recipe that would generate any class.
  
-    $r = recipe( 'model' )->with( [
-        'namespace' => '\\App\\Models',
-        'class' => 'Post',
-        'table' => 'posts',
-        'dates' => [ 'created_at', 'updated_at', 'deleted_at' ],
-        'relations' => [
-            [
-                'name' => 'comments',
-                'type' => 'hasMany',
-                'model' => '\App\Models\Comment',
-            ],
-            [
-                'name' => 'user',
-                'type' => 'belongsTo',
-                'model' => '\App\Models\User',
-            ],
+1. Create a new view inside `resources/views/recipe` folder:
+
+resources/views/recipe/class.blade.php
+```blade
+
+{!! '<'.'?php' !!}
+
+@unless(empty( $namespace ))
+namespace {{ $namespace }};
+@endunless
+
+@unless(empty( $imports ))
+@foreach( $imports as $import)
+import {{ $import }};
+@endforeach
+@endunless
+
+class {{ $class }} {{ isset($extends) ? 'extends '. $extends : '' }} {{ !empty($implements) ? 'implements '. collect($implements)->implode(', ') : '' }}
+{
+@unless(empty($traits))
+    use {{ collect($traits)->implode(', ') }};
+@endunless
+
+@isset($content)
+    {!! $content !!}
+@endisset
+}
+
+```
+
+Then anywhere in your code you can run:
+
+```blade
+ 
+   $recipe = recipe()->usingView( 'recipes.class' )->with( [
+        'namespace' => 'App',
+        'class' => 'User',
+        'extends' => 'Authenticatable',
+
+        'imports' => [
+            'Illuminate\Foundation\Auth\User as Authenticatable',
+            'Illuminate\Notifications\Notifiable',
+            'Laravel\Passport\HasApiTokens',
         ],
-    ] )->build();
- 
-    file_put_contents( base_path( 'app/Models/Post.php' ), $r );
- 
- 
-    $r = recipe( 'model' )->with( [
-        'namespace' => '\\App\\Models',
-        'class' => 'Comment',
-        'table' => 'comments',
-        'dates' => [ 'created_at', 'updated_at', 'deleted_at' ],
-        'relations' => [
-            [
-                'name' => 'post',
-                'type' => 'belongsTo',
-                'model' => '\App\Models\Post',
-            ],
-            [
-                'name' => 'author',
-                'type' => 'belongsTo',
-                'model' => '\App\Models\User',
-            ],
+
+        'traits' => [
+            'HasApiTokens',
+            'Notifiable',
         ],
-    ] )->build();
- 
-    file_put_contents( base_path( 'app/Models/Comment.php' ), $r );
- 
-  
+//            'implements' => [ 'SomeInterface', 'OtherInterface' ],
+    ] );
+    
 ```
 
-## Tutorial
-Coming soon
+Get the compiled code:
 
-## API
-Coming soon
+```php
+    dd( $recipe->build() )
+```
 
-## Contributing
-Help us build an amazing tool!
+Save to file:
 
-Pull requests and new maintainers are welcome.
+```php
+    $recipe->build( app_path('User.php') );
+```
 
-Bug and feature requests are welcome in the Issues section.
+Now let's create a dedicated class for this recipe to make it easier.
+
+app/Recipes/ClassRecipe.php
+```php
+<?php
+ 
+namespace App\Recipes;
+ 
+ 
+class ClassRecipe extends \Exfriend\Recipe\Recipe
+{
+    
+    public $props = [
+        'class' => [
+            'rules' => 'required',
+        ],
+        'content' => [ 'default' => '', ],
+        'imports' => [ 'default' => [], ],
+    ];
+ 
+    protected $view_name = 'recipes.class';
+     
+}
+ 
+```
+
+Here you can notice that we're hardcoding the template name and defining a new `$props` variable which is somewhat similar to what Vue uses in it's components.
+
+Two important things happen here: 
+
+First, we added some validation telling Recipe that `class` property is mandatory in this recipe. You can set the rules property just like you normally would in your Laravel application - that's the same thing.
+
+Second, we're setting default values for `content` and `import`. Those defaults will be applied if the user does not provide anything as the input.
+
+So, our resulting usage will now look like this:
+
+```php
+    $recipe = ( \App\Recipes\ClassRecipe::class )->with( [
+        'namespace' => 'App',
+        'class' => 'User',
+        'extends' => 'Illuminate\Foundation\Auth\User',
+    ] )
+    ->build( app_path('User.php') );
+```
+
+An important note: 
+
+Because of props, the actual data passed to a template will be slightly different from what we passed in. For example, it will have `content` and `imports`.
+Sometimes you would like to just get the transformed data withour compiling the whole template (e.g. for nested recipes, see below).
+To only get the compiled data, run:
+
+```php
+
+    $recipe = ( \App\Recipes\ClassRecipe::class )->with( [
+        ...
+    ] )
+    ->buildData();
+```
+
+Since we are generating a model here and model is something we'd like to generate often, it makes sense to create a dedicated Model recipe based on a general class recipe we already have.
+Let's make a simple Model recipe:
+
+app/Recipes/ModelRecipe.php
+```php
+
+```
 
 
+## Advanced Usage
+
+Coming soon.

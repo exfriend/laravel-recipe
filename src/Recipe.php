@@ -2,48 +2,24 @@
 
 namespace Exfriend\Recipe;
 
-
-use Exfriend\Recipe\Collections\ConfigCollection;
 use Exfriend\Recipe\Collections\DataCollection;
 use Exfriend\Recipe\Collections\PropsCollection;
 
-abstract class Recipe
+class Recipe
 {
-    public $data = [];
-    public $props = [];
-    protected $config = [];
+    protected $data = [];
+    protected $props = [];
+    protected $view_name;
 
-    public $description = '';
-
-    protected $command;
-
-    public $saveTo = [ 'stdout', 'file', 'data' ];
-
-    protected $template;
-    //    protected $interactMap = [
-    //        'prop_name' => 'interacrAboutPropName',
-    //    ];
-
-    public function getDefaultFilePath()
+    public function getViewName()
     {
-        return base_path();
+        return $this->view_name;
     }
 
     public function __construct()
     {
         $this->loadProps();
         $this->data = new DataCollection();
-        $this->config = new ConfigCollection();
-    }
-
-    public function interactWithCommand( $command )
-    {
-        $this->command = $command;
-    }
-
-    public function withConfig( array $config )
-    {
-        $this->config = $this->config->merge( $config );
     }
 
     public function with( $data )
@@ -52,9 +28,15 @@ abstract class Recipe
         return $this;
     }
 
-    public function withSchema( $jsonFileName )
+    public function usingView( $view_name )
     {
-        return $this->with( json_decode( file_get_contents( $jsonFileName ), true ) );
+        $this->view_name = $view_name;
+        return $this;
+    }
+
+    public function withSchema( $jsonFileName, $assoc = true )
+    {
+        return $this->with( json_decode( file_get_contents( $jsonFileName ), $assoc ) );
     }
 
     public function __toString()
@@ -62,7 +44,18 @@ abstract class Recipe
         return $this->build();
     }
 
-    public function build()
+    public function build( $saveTo = null )
+    {
+        $this->buildData();
+        $compiled = (string)view( $this->getViewName(), $this->data );
+        if ( $saveTo )
+        {
+            file_put_contents( $saveTo, $compiled );
+        }
+        return $compiled;
+    }
+
+    public function buildData()
     {
         $this->validateParams();
 
@@ -71,13 +64,7 @@ abstract class Recipe
             $this->prepare();
         }
 
-        view()->addNamespace( 'recipes', base_path( 'recipes' ) );
-        return $this->compile();
-    }
-
-    public function compile()
-    {
-        return (string)view( 'recipes::' . $this->template, $this->data );
+        return $this->data->toArray();
     }
 
     protected function validateParams()
@@ -89,10 +76,11 @@ abstract class Recipe
             if ( isset( $parameter[ 'rules' ] ) )
             {
                 $rules[ $name ] = $parameter[ 'rules' ];
-                if ( !is_null( $parameter[ 'default' ] ) && empty( $this->data[ $name ] ) )
-                {
-                    $this->data[ $name ] = $parameter[ 'default' ];
-                }
+            }
+
+            if ( isset( $parameter[ 'default' ] ) && !is_null( $parameter[ 'default' ] ) && empty( $this->data[ $name ] ) )
+            {
+                $this->data[ $name ] = $parameter[ 'default' ];
             }
         }
 
@@ -105,49 +93,6 @@ abstract class Recipe
 
     }
 
-    public function interact( $command = null )
-    {
-        $command = $command ?? $this->command;
-
-        foreach ( $this->props as $name => $prop )
-        {
-            // Search interactMap. If mapping exists, call it.
-            if ( collect( $this->interactMap )->has( $name ) )
-            {
-                call_user_func( [ $this, $this->interactMap[ $name ] ], $command, $prop );
-                continue;
-            }
-
-            // Search "magic" method
-            elseif ( method_exists( $this, 'interactAbout' . studly_case( $name ) ) )
-            {
-                call_user_func( [ $this, 'interactAbout' . studly_case( $name ) ], $command, $prop );
-                continue;
-            }
-            else
-            {
-                // No interaction. Try to guess the fallback?
-                $this->defaultInteraction( $command, $prop, $name );
-                continue;
-            }
-        }
-    }
-
-    private function defaultInteraction( MakeRecipe $command, $prop, $name )
-    {
-        if ( $prop->isScalar() )
-        {
-            $question = $prop[ 'question' ] ?? 'Set ' . $name;
-            if ( isset( $prop[ 'example' ] ) )
-            {
-                $question .= ' (e.g. ' . $prop[ 'example' ] . ')';
-            }
-
-            $value = $command->ask( $question, $prop[ 'default' ] );
-            $this->data->put( $name, $value );
-        }
-    }
-
     protected function loadProps()
     {
         $props = $this->props;
@@ -155,15 +100,7 @@ abstract class Recipe
 
         foreach ( $props as $k => $v )
         {
-            if ( !is_array( $v ) )
-            {
-                $this->props[ $v ] = new Prop( [ 'default' => '' ] );
-            }
-            else
-            {
-                $this->props[ $k ] = new Prop( $v );
-            }
-
+            $this->props[ $k ] = new Prop( $v );
         }
 
         $this->props = new PropsCollection( $this->props );
